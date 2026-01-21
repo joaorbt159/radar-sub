@@ -335,6 +335,25 @@
                     setTimeout(() => radar.removeChild(newCircle), 500);
                 }, 2000);
             }
+
+            if (event.code === 'KeyC' && !empActive) {
+                const radarRect = radar.getBoundingClientRect();
+                const centerX = radarRect.width / 2;
+                const centerY = radarRect.height / 2;
+
+                const newCircle = document.createElement('div');
+                newCircle.classList.add('white-circle');
+                newCircle.style.left = `${centerX - 10}px`;
+                newCircle.style.top = `${centerY - 10}px`;
+                newCircle.style.opacity = '1';
+                radar.appendChild(newCircle);
+
+                setTimeout(() => {
+                    newCircle.style.opacity = '0';
+                    setTimeout(() => radar.removeChild(newCircle), 500);
+                }, 2000);
+            }
+
         });
 
         // Clique nos controles (verde)
