@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radar Submarino</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
+            color: green;
+            font-family: monospace;
+        }
+
+        /* Indicadores de profundidade */
+        .depth-container {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            text-align: left;
+        }
+
+        .depth-indicator {
+            font-size: 36px;
+        }
+
+        .paused-indicator {
+            font-size: 28px;
+            color: red;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            margin-top: 10px;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .paused-indicator.active {
+            opacity: 1;
+            animation: blink 1s infinite;
+        }
+
+        /* Radar */
+        .radar {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            border: 2px solid #00ff00;
+            overflow: hidden;
+        }
+
+        .radar::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 150px;
+            background-color: rgba(0, 255, 0, 1);
+            transform-origin: 50% 100%;
+            animation: rotate 2s linear infinite;
+            transform: translate(-50%, -100%);
+        }
+
+        @keyframes rotate {
+            0% { transform: translate(-50%, -100%) rotate(0deg); }
+            100% { transform: translate(-50%, -100%) rotate(360deg); }
+        }
+
+        .radar-lines, .radar-circles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+        }
+
+        .radar-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background-color: rgba(0, 255, 0, 0.2);
+        }
+
+        .radar-line:nth-child(1) { top: 25%; }
+        .radar-line:nth-child(2) { top: 50%; }
+        .radar-line:nth-child(3) { top: 75%; }
+
+        .radar-circle {
+            position: absolute;
+            border: 1px solid rgba(0, 255, 0, 0.5);
+            border-radius: 50%;
+        }
+
+        .radar-circle:nth-child(1) { width: 50px; height: 50px; top: 50%; left: 50%; margin-left: -25px; margin-top: -25px; }
+        .radar-circle:nth-child(2) { width: 100px; height: 100px; top: 50%; left: 50%; margin-left: -50px; margin-top: -50px; }
+        .radar-circle:nth-child(3) { width: 150px; height: 150px; top: 50%; left: 50%; margin-left: -75px; margin-top: -75px; }
+        .radar-circle:nth-child(4) { width: 200px; height: 200px; top: 50%; left: 50%; margin-left: -100px; margin-top: -100px; }
+        .radar-circle:nth-child(5) { width: 250px; height: 250px; top: 50%; left: 50%; margin-left: -125px; margin-top: -125px; }
+
+        .white-circle {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        /* Painel lateral direito */
+        .right-panel {
+            position: absolute;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .block {
+            width: 80px;
+            height: 40px;
+            border: 2px solid #00ff00;
+            margin: 5px;
+            border-radius: 6px;
+            background-color: transparent;
+            transition: background-color 0.3s;
+        }
+
+        .block.active {
+            background-color: #00ff00;
+        }
+
+        .control-list {
+            margin-top: 30px;
+            text-align: left;
+            color: #00ff00;
+            font-size: 18px;
+        }
+
+        .control-item {
+            display: flex;
+            align-items: center;
+            margin: 6px 0;
+            cursor: pointer;
+        }
+
+        .control-circle {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #00ff00;
+            border-radius: 50%;
+            margin-right: 10px;
+            transition: background-color 0.3s;
+        }
+
+        .control-circle.active {
+            background-color: #00ff00;
+        }
+
+        /* ======== ESTILO DO BOTÃO EMP ======== */
+        .control-item.emp {
+            color: red;
+            font-weight: bold;
+        }
+
+        .control-item.emp .control-circle {
+            border-color: red;
+        }
+
+        .control-item.emp .control-circle.active {
+            background-color: red;
+        }
+
+        /* ======== MODO EMP ======== */
+        body.emp-mode {
+            background-color: #200;
+            transition: background-color 0.5s ease;
+        }
+
+        .block.emp {
+            border-color: red !important;
+            background-color: rgba(255, 0, 0, 0.3) !important;
+            box-shadow: 0 0 10px red;
+        }
+
+        .control-circle.emp {
+            border-color: red !important;
+            background-color: rgba(255, 0, 0, 0.2) !important;
+            box-shadow: 0 0 5px red;
+        }
+
+        .control-item.emp span {
+            color: red !important;
+        }
+
+        /* Modo EMP desativa as cores verdes */
+        .block.active.emp,
+        .control-circle.active.emp {
+            background-color: rgba(255, 0, 0, 0.4) !important;
+        }
+
+
+    </style>
+</head>
+<body>
+    <!-- Indicador de profundidade -->
+    <div class="depth-container">
+        <div class="depth-indicator" id="depth">0m</div>
+        <div class="paused-indicator" id="paused">PARADO</div>
+    </div>
+
+    <!-- Radar -->
+    <div class="radar" id="radar">
+        <div class="radar-lines">
+            <div class="radar-line"></div>
+            <div class="radar-line"></div>
+            <div class="radar-line"></div>
+        </div>
+        <div class="radar-circles">
+            <div class="radar-circle"></div>
+            <div class="radar-circle"></div>
+            <div class="radar-circle"></div>
+            <div class="radar-circle"></div>
+            <div class="radar-circle"></div>
+        </div>
+    </div>
+
+    <!-- Painel direito -->
+    <div class="right-panel">
+        <div id="block1" class="block"></div>
+        <div id="block2" class="block"></div>
+        <div id="block3" class="block"></div>
+
+        <div class="control-list">
+            <div class="control-item"><div class="control-circle"></div>Direção</div>
+            <div class="control-item"><div class="control-circle"></div>Luz</div>
+            <div class="control-item"><div class="control-circle"></div>Canhão</div>
+            <div class="control-item"><div class="control-circle"></div>Escudo</div>
+            <div class="control-item"><div class="control-circle"></div>Braço</div>
+            <div class="control-item"><div class="control-circle"></div>Oxigênio</div>
+        </div>
+
+        <div class="control-item emp" id="emp-button">
+            <div class="control-circle"></div>
+            <span>EMP</span>
+        </div>
+    </div>
+
+    <script>
+        let depth = 0;
+        let lastUpdate = Date.now();
+        let isPaused = false;
+        let empActive = false;
+        const descentSpeed = 2;
+        const depthDisplay = document.getElementById('depth');
+        const pausedDisplay = document.getElementById('paused');
+        const radar = document.getElementById('radar');
+        const blocks = [document.getElementById('block1'), document.getElementById('block2'), document.getElementById('block3')];
+        const controlItems = document.querySelectorAll('.control-item');
+        const empButton = document.getElementById('emp-button');
+        let activeBlocks = 0;
+        let clickCount = 0;
+
+        function updateDepth() {
+            if (!isPaused && !empActive) {
+                const now = Date.now();
+                const deltaTime = (now - lastUpdate) / 1000;
+                lastUpdate = now;
+                depth -= descentSpeed * deltaTime;
+                depthDisplay.textContent = `${Math.floor(depth)}m`;
+
+                if (depth >= -2999) {
+                    depthDisplay.style.color = 'green';
+                } else if (depth >= -5999) {
+                    depthDisplay.style.color = 'yellow';
+                } else {
+                    depthDisplay.style.color = 'red';
+                }
+            } else {
+                lastUpdate = Date.now();
+            }
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.code === 'KeyP' && !empActive) {
+                isPaused = !isPaused;
+                pausedDisplay.classList.toggle('active', isPaused);
+            }
+
+            if (event.code === 'KeyR' && empActive) {
+                // Restaurar tudo ao normal
+                empActive = false;
+                document.body.classList.remove('emp-mode');
+                blocks.forEach(b => {
+                    b.classList.remove('active', 'emp');
+                });
+                controlItems.forEach(i => {
+                    const c = i.querySelector('.control-circle');
+                    c.classList.remove('active', 'emp');
+                });
+                clickCount = 0;
+                activeBlocks = 0;
+            }
+
+            if (event.code === 'Space' && !empActive) {
+                const radarRect = radar.getBoundingClientRect();
+                const radarCenterX = radarRect.width / 2;
+                const radarCenterY = radarRect.height / 2;
+                const minRadius = radarRect.width * 0.4;
+                const maxRadius = radarRect.width / 2 - 10;
+                const angle = Math.random() * 2 * Math.PI;
+                const radius = minRadius + Math.random() * (maxRadius - minRadius);
+                const x = radarCenterX + Math.cos(angle) * radius;
+                const y = radarCenterY + Math.sin(angle) * radius;
+
+                const newCircle = document.createElement('div');
+                newCircle.classList.add('white-circle');
+                newCircle.style.left = `${x - 10}px`;
+                newCircle.style.top = `${y - 10}px`;
+                newCircle.style.opacity = '1';
+                radar.appendChild(newCircle);
+
+                setTimeout(() => {
+                    newCircle.style.opacity = '0';
+                    setTimeout(() => radar.removeChild(newCircle), 500);
+                }, 2000);
+            }
+        });
+
+        // Clique nos controles (verde)
+        controlItems.forEach(item => {
+            item.addEventListener('click', () => {
+                if (empActive || item.classList.contains('emp')) return;
+
+                const circle = item.querySelector('.control-circle');
+                if (circle.classList.contains('active')) return;
+
+                circle.classList.add('active');
+                clickCount++;
+
+                if (activeBlocks < blocks.length) {
+                    blocks[activeBlocks].classList.add('active');
+                    activeBlocks++;
+                }
+
+                if (clickCount >= 4) {
+                    blocks.forEach(b => b.classList.remove('active'));
+                    controlItems.forEach(i => i.querySelector('.control-circle').classList.remove('active'));
+                    clickCount = 0;
+                    activeBlocks = 0;
+                }
+            });
+        });
+
+        // Botão EMP
+        empButton.addEventListener('click', () => {
+            empActive = true;
+            document.body.classList.add('emp-mode');
+
+            blocks.forEach(b => {
+                b.classList.remove('active');
+                b.classList.add('emp');
+            });
+
+            controlItems.forEach(i => {
+                const c = i.querySelector('.control-circle');
+                c.classList.remove('active');
+                c.classList.add('emp');
+            });
+        });
+
+        setInterval(updateDepth, 100);
+    </script>
+</body>
+</html>
