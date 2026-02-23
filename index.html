@@ -257,7 +257,7 @@
     </div>
 
     <script>
-        let depth = 0;
+        let depth = -1329;
         let lastUpdate = Date.now();
         let isPaused = false;
         let empActive = false;
@@ -313,28 +313,29 @@
             }
 
             if (event.code === 'Space' && !empActive) {
-                const radarRect = radar.getBoundingClientRect();
-                const radarCenterX = radarRect.width / 2;
-                const radarCenterY = radarRect.height / 2;
-                const minRadius = radarRect.width * 0.4;
-                const maxRadius = radarRect.width / 2 - 10;
-                const angle = Math.random() * 2 * Math.PI;
-                const radius = minRadius + Math.random() * (maxRadius - minRadius);
-                const x = radarCenterX + Math.cos(angle) * radius;
-                const y = radarCenterY + Math.sin(angle) * radius;
+                    const radarRect = radar.getBoundingClientRect();
+                    const centerX = radarRect.width / 2;
+                    const centerY = radarRect.height / 2;
 
-                const newCircle = document.createElement('div');
-                newCircle.classList.add('white-circle');
-                newCircle.style.left = `${x - 10}px`;
-                newCircle.style.top = `${y - 10}px`;
-                newCircle.style.opacity = '1';
-                radar.appendChild(newCircle);
+                    // Gera posição aleatória DENTRO do círculo
+                    const angle = Math.random() * 2 * Math.PI;
+                    const radius = Math.random() * (radarRect.width / 2 - 10);
 
-                setTimeout(() => {
-                    newCircle.style.opacity = '0';
-                    setTimeout(() => radar.removeChild(newCircle), 500);
-                }, 2000);
-            }
+                    const x = centerX + Math.cos(angle) * radius;
+                    const y = centerY + Math.sin(angle) * radius;
+
+                    const newCircle = document.createElement('div');
+                    newCircle.classList.add('white-circle');
+                    newCircle.style.left = `${x - 10}px`;
+                    newCircle.style.top = `${y - 10}px`;
+                    newCircle.style.opacity = '1';
+                    radar.appendChild(newCircle);
+
+                    setTimeout(() => {
+                        newCircle.style.opacity = '0';
+                        setTimeout(() => radar.removeChild(newCircle), 500);
+                    }, 2000);
+                }
 
             if (event.code === 'KeyC' && !empActive) {
                 const radarRect = radar.getBoundingClientRect();
